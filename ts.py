@@ -1,228 +1,374 @@
 import re
+import sys
+import threading
+import tkinter as tk
+from tkinter import scrolledtext
 from dataclasses import dataclass
+from queue import Queue
 
+# --- DATA STRUCTURE ---
 @dataclass
 class Token:
     type: str
     value: str
-    line: int
-    column: int
 
-# --- FASE 1: ANALISADOR LÉXICO (LEXER) ---
+# --- LANGUAGE CONFIGURATION ---
+DICTIONARY = {
+    "COMMANDS": {
+        "ohjelma": "Início do programa",
+        "loppu": "Fim do programa",
+        "jos": "If",
+        "muuten": "Else",
+        "kunnes": "While",
+        "lue": "Input",
+        "kirjoita": "Print"
+    },
+    "TYPES": {
+        "kokonaisluku": "Inteiro",
+        "desimaali": "Decimal",
+        "merkkijono": "Texto"
+    },
+    "OPERATORS": {
+        ":=": "Atribuição",
+        "==": "Igual a",
+        "!=": "Diferente",
+        "+": "Soma",
+        "-": "Subtração",
+        "*": "Multiplicação",
+        "/": "Divisão"
+    }
+}
+
 TOKEN_SPEC = [
-    ('PROGRAM',    r'ohjelma'),          
-    ('ENDPROG',    r'loppu'),            
-    ('TYPE_INT',   r'kokonaisluku'),     
-    ('TYPE_DEC',   r'desimaali'),        
-    ('TYPE_STR',   r'merkkijono'),       
-    ('TYPE_BOOL',  r'totuusarvo'),       
-    ('IF',         r'jos'),              
-    ('ELSE',       r'muuten'),           
-    ('DO',         r'tee'),              
-    ('WHILE',      r'kunnes'),           
-    ('READ',       r'lue'),              
-    ('WRITE',      r'kirjoita'),         
-    ('NUMBER_DEC', r'\d+\.\d+'),         
-    ('NUMBER_INT', r'\d+'),              
-    ('STRING',     r'"[^"]*"'),          
-    ('ID',         r'[a-zA-Z_]\w*'),     
-    ('ASSIGN',     r':='),               
-    ('OP_REL',     r'[<>!=]=|[<>]|=='),  
-    ('PLUS',       r'\+'),               
-    ('MINUS',      r'-'),                
-    ('MUL',        r'\*'),               
-    ('DIV',        r'/'),                
-    ('LPAREN',     r'\('),               
-    ('RPAREN',     r'\)'),               
-    ('LBRACE',     r'\{'),               
-    ('RBRACE',     r'\}'),               
-    ('COMMA',      r','),                
-    ('DOT',        r'\.'),               
+    ('PROGRAM',    r'ohjelma'),
+    ('ENDPROG',    r'loppu'),
+    ('TYPE_INT',   r'kokonaisluku'),
+    ('TYPE_DEC',   r'desimaali'),
+    ('TYPE_STR',   r'merkkijono'),
+    ('IF',         r'jos'),
+    ('ELSE',       r'muuten'),
+    ('WHILE',      r'kunnes'),
+    ('READ',       r'lue'),
+    ('WRITE',      r'kirjoita'),
+    ('NUMBER_DEC', r'\d+\.\d+'),
+    ('NUMBER_INT', r'\d+'),
+    ('STRING',     r'"[^"]*"'),
+    ('ID',         r'[a-zA-ZÀ-ÿ_][a-zA-ZÀ-ÿ0-9_]*'), # Suporte a acentos e ç
+    ('ASSIGN',     r':='),
+    ('OP_REL',     r'[<>!=]=|[<>]|=='),
+    ('PLUS',       r'\+'),
+    ('MINUS',      r'-'),
+    ('MUL',        r'\*'),
+    ('DIV',        r'/'),
+    ('LPAREN',     r'\('),
+    ('RPAREN',     r'\)'),
+    ('LBRACE',     r'\{'),
+    ('RBRACE',     r'\}'),
+    ('COMMA',      r','),
+    ('DOT',        r'\.'),
     ('WS',         r'\s+'),
-    ('COMMENT',    r'#.*'), # Suporte a comentários para não dar erro léxico
 ]
 
 regex = '|'.join(f'(?P<{name}>{pattern})' for name, pattern in TOKEN_SPEC)
 
 def tokenize(text):
-    line, col, pos = 1, 1, 0
+    pos = 0
     while pos < len(text):
         match = re.match(regex, text[pos:])
-        if not match: raise SyntaxError(f"Erro Léxico: '{text[pos]}' em {line}:{col}")
+        if not match: 
+            pos += 1 # Ignora caracteres desconhecidos
+            continue
         kind, value = match.lastgroup, match.group()
-        if kind not in ('WS', 'COMMENT'): 
-            yield Token(kind, value, line, col)
-        if '\n' in value:
-            line += value.count('\n')
-            col = len(value) - value.rfind('\n')
-        else: col += len(value)
+        if kind != 'WS': yield Token(kind, value)
         pos += len(value)
 
-# --- FASE 2: ANALISADOR SINTÁTICO E SEMÂNTICO (PARSER) ---
+# --- TRANSPILER ---
 class FinlandesTranspiler:
     def __init__(self, tokens):
         self.tokens = list(tokens)
         self.pos = 0
         self.indent_level = 0
-        # TABELA DE SÍMBOLOS: Armazena {'nome_da_var': 'TIPO'} 
-        self.symbol_table = {} 
 
     def consume(self, expected_type=None):
-        if self.pos >= len(self.tokens):
-            raise Exception("Erro: Fim de arquivo inesperado.")
+        if self.pos >= len(self.tokens): return None
         token = self.tokens[self.pos]
-        if expected_type and token.type != expected_type:
-            raise Exception(f"Linha {token.line}: Esperado {expected_type}, mas encontrou {token.type} ('{token.value}')")
+        if expected_type and token.type != expected_type: return None
         self.pos += 1
         return token
 
     def peek(self):
-        if self.pos < len(self.tokens):
-            return self.tokens[self.pos]
-        return None
+        return self.tokens[self.pos] if self.pos < len(self.tokens) else None
 
     def get_indent(self):
         return "    " * self.indent_level
 
     def parse_program(self):
-        code = ""
-        self.consume('PROGRAM')
+        code = "def run_program():\n"
+        self.indent_level = 1
+        if not self.consume('PROGRAM'): return "# Use 'ohjelma' para começar"
         while self.peek() and self.peek().type != 'ENDPROG':
-            code += self.parse_statement()
+            stmt = self.parse_statement()
+            if stmt: code += stmt
         self.consume('ENDPROG')
+        code += "\nrun_program()"
         return code
 
     def parse_statement(self):
-        t = self.peek().type
-        if t in ('TYPE_INT', 'TYPE_DEC', 'TYPE_STR', 'TYPE_BOOL'):
-            return self.parse_declaration()
-        elif t == 'WRITE': return self.parse_write()
-        elif t == 'ID': return self.parse_assignment()
-        elif t == 'IF': return self.parse_if()
-        elif t == 'DO': return self.parse_do_while()
-        else:
-            self.pos += 1
-            return ""
+        p = self.peek()
+        if not p: return ""
+        t = p.type
+        if t in ('TYPE_INT', 'TYPE_DEC', 'TYPE_STR'): return self.parse_declaration()
+        if t == 'WRITE': return self.parse_write()
+        if t == 'READ': return self.parse_read()
+        if t == 'ID': return self.parse_assignment()
+        if t == 'IF': return self.parse_if()
+        if t == 'ELSE': return self.parse_else() # CORREÇÃO: Adicionado suporte ao Else
+        if t == 'WHILE': return self.parse_while()
+        self.pos += 1
+        return ""
 
     def parse_declaration(self):
-        # Mapeia o token de tipo para uma categoria interna [cite: 18]
-        type_token = self.consume()
-        var_type = type_token.type 
-        
+        self.consume()
         ids = []
         while True:
             token_id = self.consume('ID')
-            # Guarda na tabela de símbolos para verificação posterior [cite: 29]
-            self.symbol_table[token_id.value] = var_type
-            ids.append(f"{token_id.value} = None")
-            if self.peek().type != 'COMMA': break
+            if not token_id: break
+            ids.append(f"{token_id.value} = 0")
+            if not self.peek() or self.peek().type != 'COMMA': break
             self.consume('COMMA')
         self.consume('DOT')
         return "\n".join([self.get_indent() + i for i in ids]) + "\n"
 
+    def parse_read(self):
+        self.consume('READ')
+        self.consume('LPAREN')
+        var_token = self.consume('ID')
+        self.consume('RPAREN')
+        self.consume('DOT')
+        if var_token:
+            return f"{self.get_indent()}{var_token.value} = terminal_input('{var_token.value}')\n"
+        return ""
+
     def parse_assignment(self):
         var_token = self.consume('ID')
-        var_name = var_token.value
-        
-        # VERIFICAÇÃO 1: Variável declarada? [cite: 29]
-        if var_name not in self.symbol_table:
-            raise Exception(f"Erro Semântico: Variável '{var_name}' não foi declarada.")
-        
-        target_type = self.symbol_table[var_name]
         self.consume('ASSIGN')
-        
-        # Processa a expressão e verifica tipos [cite: 26]
-        expr_code, expr_type = self.parse_expression()
-        
-        # VERIFICAÇÃO 2: Compatibilidade de tipos (Simplificada) [cite: 26]
-        if target_type == 'TYPE_INT' and expr_type == 'TYPE_STR':
-            raise Exception(f"Erro Semântico na linha {var_token.line}: Não é possível atribuir uma STRING à variável inteira '{var_name}'.")
-        
+        expr = ""
+        while self.peek() and self.peek().type != 'DOT':
+            expr += self.consume().value + " "
         self.consume('DOT')
-        return f"{self.get_indent()}{var_name} = {expr_code}\n"
-
-    def parse_expression(self):
-        # Implementação básica para testar: ID + ID ou ID + constante
-        left_token = self.consume()
-        left_val = left_token.value
-        
-        # Tenta descobrir o tipo do operando esquerdo
-        if left_token.type == 'ID':
-            left_type = self.symbol_table.get(left_val, 'UNKNOWN')
-        elif left_token.type == 'STRING': left_type = 'TYPE_STR'
-        else: left_type = 'TYPE_INT'
-
-        # Se houver um operador de soma
-        if self.peek() and self.peek().type == 'PLUS':
-            self.consume('PLUS')
-            right_code, right_type = self.parse_expression()
-            
-            # VERIFICAÇÃO DE SOMA INVÁLIDA [cite: 26]
-            if (left_type == 'TYPE_STR' and right_type != 'TYPE_STR') or \
-               (left_type != 'TYPE_STR' and right_type == 'TYPE_STR'):
-                raise Exception(f"Erro Semântico: Operação inválida entre {left_type} e {right_type}.")
-            
-            return f"{left_val} + {right_code}", left_type
-        
-        return left_val, left_type
+        return f"{self.get_indent()}{var_token.value} = {expr.strip()}\n"
 
     def parse_write(self):
         self.consume('WRITE')
         self.consume('LPAREN')
-        val = self.consume().value
+        val = ""
+        while self.peek() and self.peek().type != 'RPAREN':
+            val += self.consume().value + " "
         self.consume('RPAREN')
         self.consume('DOT')
-        return f"{self.get_indent()}print({val})\n"
+        return f"{self.get_indent()}print({val.strip()})\n"
 
     def parse_if(self):
         self.consume('IF')
         self.consume('LPAREN')
-        # Simplificado para fins de teste
-        cond = f"{self.consume().value} {self.consume('OP_REL').value} {self.consume().value}"
+        cond = ""
+        while self.peek() and self.peek().type != 'RPAREN':
+            cond += self.consume().value + " "
         self.consume('RPAREN')
         self.consume('LBRACE')
         self.indent_level += 1
         body = ""
-        while self.peek().type != 'RBRACE':
+        while self.peek() and self.peek().type != 'RBRACE':
             body += self.parse_statement()
         self.indent_level -= 1
         self.consume('RBRACE')
-        return f"{self.get_indent()}if {cond}:\n{body}"
+        return f"{self.get_indent()}if {cond.strip()}:\n{body or self.get_indent()+'    pass'}\n"
 
-    def parse_do_while(self):
-        self.consume('DO')
+    def parse_else(self): # NOVO MÉTODO: Suporte ao muuten
+        self.consume('ELSE')
         self.consume('LBRACE')
         self.indent_level += 1
         body = ""
-        while self.peek().type != 'RBRACE':
+        while self.peek() and self.peek().type != 'RBRACE':
             body += self.parse_statement()
         self.indent_level -= 1
         self.consume('RBRACE')
+        return f"{self.get_indent()}else:\n{body or self.get_indent()+'    pass'}\n"
+
+    def parse_while(self):
         self.consume('WHILE')
         self.consume('LPAREN')
-        cond = f"{self.consume().value} {self.consume('OP_REL').value} {self.consume().value}"
+        cond = ""
+        while self.peek() and self.peek().type != 'RPAREN':
+            cond += self.consume().value + " "
         self.consume('RPAREN')
-        self.consume('DOT')
-        return f"{self.get_indent()}while True:\n{body}{self.get_indent()}    if not ({cond}): break\n"
+        self.consume('LBRACE')
+        self.indent_level += 1
+        body = ""
+        while self.peek() and self.peek().type != 'RBRACE':
+            body += self.parse_statement()
+        self.indent_level -= 1
+        self.consume('RBRACE')
+        return f"{self.get_indent()}while {cond.strip()}:\n{body or self.get_indent()+'    pass'}\n"
 
-# --- ÁREA DE TESTE ---
-source_error = """
-ohjelma
-    kokonaisluku a.
-    # Esqueci o parentese: jos a > 10 {
-    jos a > 10 {
-        kirjoita("Erro aqui").
-    }
-loppu
-"""
+# --- INTERFACE APP ---
+class InterfaceApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Finlandês IDE - Professional Edition")
+        
+        try:
+            self.root.state('zoomed') 
+        except:
+            pass
+        
+        self.colors = {
+            "bg": "#121212", "sidebar": "#1e1e1e", "text": "#e0e0e0",
+            "accent": "#00aaff", "term_bg": "#0a0a0a", "green": "#4caf50"
+        }
+        
+        self.input_queue = Queue()
+        self.is_running = False
+        self.prompt_index = "1.0"
+        
+        self.setup_ui()
+        self.load_dictionary()
+        self.load_calculator_example()
 
-try:
-    tokens = tokenize(source_error)
-    transpiler = FinlandesTranspiler(tokens)
-    python_code = transpiler.parse_program()
-    
-    with open("resultado.py", "w") as f:
-        f.write(python_code)
-    print("Sucesso! Arquivo gerado.")
-except Exception as e:
-    print(f"TESTE DE ERRO CAPTURADO: {e}")
+    def setup_ui(self):
+        self.root.configure(bg=self.colors["bg"])
+        main_frame = tk.Frame(self.root, bg=self.colors["bg"])
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        cols = [("Dicionário", "dict"), ("Código Finlandês", "in"), 
+                ("Tradução Python", "out"), ("Terminal Real", "term")]
+
+        self.widgets = {}
+        for i, (title, key) in enumerate(cols):
+            f = tk.Frame(main_frame, bg=self.colors["bg"])
+            f.grid(row=0, column=i, sticky="nsew", padx=2)
+            main_frame.grid_columnconfigure(i, weight=1)
+            main_frame.grid_rowconfigure(0, weight=1)
+
+            tk.Label(f, text=title.upper(), font=("Segoe UI", 9, "bold"), 
+                     bg=self.colors["bg"], fg=self.colors["accent"]).pack(pady=2)
+            
+            bg_color = self.colors["term_bg"] if key == "term" else "#1e1e1e"
+            fg_color = "#00ff00" if key == "term" else self.colors["text"]
+            
+            txt = scrolledtext.ScrolledText(f, font=("Consolas", 11), bg=bg_color, 
+                                          fg=fg_color, insertbackground="white", bd=0)
+            txt.pack(fill=tk.BOTH, expand=True)
+            self.widgets[key] = txt
+
+        self.widgets["in"].bind("<KeyRelease>", self.update_translation)
+        self.widgets["term"].bind("<Return>", self.handle_terminal_enter)
+        self.widgets["term"].bind("<BackSpace>", self.handle_backspace)
+
+        btn_frame = tk.Frame(self.root, bg=self.colors["bg"])
+        btn_frame.pack(fill=tk.X)
+        
+        self.run_btn = tk.Button(btn_frame, text="EXECUTAR PROGRAMA (RUN)", command=self.start_execution_thread, 
+                               bg=self.colors["green"], fg="white", font=("Segoe UI", 10, "bold"),
+                               relief=tk.FLAT, padx=20, pady=8)
+        self.run_btn.pack(pady=10)
+
+    def handle_backspace(self, event):
+        if self.widgets["term"].compare("insert", "<=", self.prompt_index):
+            return "break"
+
+    def handle_terminal_enter(self, event):
+        if not self.is_running: return "break"
+        input_data = self.widgets["term"].get(self.prompt_index, tk.END).strip()
+        self.widgets["term"].insert(tk.END, "\n")
+        self.input_queue.put(input_data)
+        self.widgets["term"].see(tk.END)
+        return "break"
+
+    def load_dictionary(self):
+        text = "REFERÊNCIA DE SINTAXE\n" + "━"*25 + "\n\n"
+        for cat, items in DICTIONARY.items():
+            text += f"[{cat}]\n"
+            for k, v in items.items():
+                text += f"{k.ljust(15)} : {v}\n"
+            text += "\n"
+        self.widgets["dict"].config(state=tk.NORMAL)
+        self.widgets["dict"].insert("1.0", text)
+        self.widgets["dict"].config(state=tk.DISABLED)
+
+    def load_calculator_example(self):
+        code = (
+            'ohjelma\n'
+            '  kokonaisluku opção, n1, n2, res.\n'
+            '  opção := 0.\n'
+            '  kunnes (opção != 9) {\n'
+            '    kirjoita("--- CALCULADORA ---").\n'
+            '    kirjoita("1:Soma | 2:Sub | 3:Mult | 4:Div | 9:Sair").\n'
+            '    kirjoita("Escolha:").\n'
+            '    lue(opção).\n\n'
+            '    jos (opção == 9) { kirjoita("Adeus!"). }\n\n'
+            '    jos (opção < 5) {\n'
+            '      kirjoita("Numero 1:"). lue(n1).\n'
+            '      kirjoita("Numero 2:"). lue(n2).\n\n'
+            '      jos (opção == 1) { res := n1 + n2. }\n'
+            '      jos (opção == 2) { res := n1 - n2. }\n'
+            '      jos (opção == 3) { res := n1 * n2. }\n'
+            '      jos (opção == 4) { res := n1 / n2. }\n'
+            '      kirjoita("Resultado:").\n'
+            '      kirjoita(res).\n'
+            '    }\n'
+            '  }\n'
+            'loppu'
+        )
+        self.widgets["in"].insert("1.0", code)
+        self.update_translation()
+
+    def update_translation(self, event=None):
+        try:
+            raw_text = self.widgets["in"].get("1.0", tk.END)
+            tokens = tokenize(raw_text)
+            py_code = FinlandesTranspiler(tokens).parse_program()
+            self.widgets["out"].config(state=tk.NORMAL)
+            self.widgets["out"].delete("1.0", tk.END)
+            self.widgets["out"].insert("1.0", py_code)
+            self.widgets["out"].config(state=tk.DISABLED)
+        except Exception: 
+            pass
+
+    def start_execution_thread(self):
+        if self.is_running: return
+        self.widgets["term"].delete("1.0", tk.END)
+        self.widgets["term"].insert(tk.END, "--- INICIANDO EXECUÇÃO ---\n")
+        self.is_running = True
+        threading.Thread(target=self.execute_code, daemon=True).start()
+
+    def execute_code(self):
+        py_code = self.widgets["out"].get("1.0", tk.END)
+        
+        def terminal_input(var_name):
+            self.widgets["term"].insert(tk.END, f"{var_name} > ")
+            self.widgets["term"].see(tk.END)
+            self.prompt_index = self.widgets["term"].index("insert")
+            val = self.input_queue.get()
+            try:
+                if '.' in val: return float(val)
+                return int(val)
+            except: return val
+
+        def custom_print(*args):
+            msg = " ".join(map(str, args)) + "\n"
+            self.widgets["term"].insert(tk.END, msg)
+            self.widgets["term"].see(tk.END)
+
+        try:
+            exec(py_code, {"terminal_input": terminal_input, "print": custom_print})
+        except Exception as e:
+            custom_print(f"\nERRO DE EXECUÇÃO: {e}")
+        finally:
+            self.is_running = False
+            custom_print("\n--- PROGRAMA FINALIZADO ---")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = InterfaceApp(root)
+    root.mainloop()
