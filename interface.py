@@ -3,9 +3,10 @@ import tkinter as tk
 from tkinter import scrolledtext
 from queue import Queue
 
+from Front.analisador import Parser
+from Front.gerador import PythonCodeGenerator
 from config import DICTIONARY
 from lexer import tokenize
-from transpiler import FinlandesTranspiler
 
 # --- INTERFACE APP ---
 class InterfaceApp:
@@ -157,7 +158,9 @@ class InterfaceApp:
         try:
             raw_text = self.widgets["in"].get("1.0", tk.END)
             tokens = tokenize(raw_text)
-            py_code = FinlandesTranspiler(tokens).parse_program()
+            
+            ast_tree = Parser(tokens).parse_program()
+            py_code = PythonCodeGenerator().generate(ast_tree)
 
             self.widgets["out"].config(state=tk.NORMAL)
             self.widgets["out"].delete("1.0", tk.END)
