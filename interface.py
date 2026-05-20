@@ -8,7 +8,6 @@ from Front.gerador import PythonCodeGenerator
 from config import DICTIONARY
 from lexer import tokenize
 
-# --- INTERFACE APP ---
 class InterfaceApp:
     def __init__(self, root):
         self.root = root

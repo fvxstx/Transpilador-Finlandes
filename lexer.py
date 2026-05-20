@@ -1,7 +1,6 @@
 import re
 from config import Token, regex
 
-# --- LEXER / TOKENIZER ---
 def tokenize(text):
     pos = 0
 
