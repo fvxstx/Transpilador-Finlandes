@@ -151,3 +151,7 @@ ohjelma
   }
 loppu
 ```
+
+
+// Melhorar esse README explicando melhor o codigo + Melhorar os exemplos de testes
+// Esse será o nossa documentação
