@@ -1,4 +1,12 @@
-from Front.ast_nodes import AssignNode, IfNode, PrintNode, ProgramNode, ReadNode, VarDeclNode, WhileNode
+from front.ast_nodes import (
+    AssignNode,
+    IfNode,
+    PrintNode,
+    ProgramNode,
+    ReadNode,
+    VarDeclNode,
+    WhileNode,
+)
 
 
 class Parser:
@@ -7,9 +15,11 @@ class Parser:
         self.pos = 0
 
     def consume(self, expected_type=None):
-        if self.pos >= len(self.tokens): return None
+        if self.pos >= len(self.tokens):
+            return None
         token = self.tokens[self.pos]
-        if expected_type and token.type != expected_type: return None
+        if expected_type and token.type != expected_type:
+            return None
         self.pos += 1
         return token
 
@@ -17,126 +27,128 @@ class Parser:
         return self.tokens[self.pos] if self.pos < len(self.tokens) else None
 
     def parse_program(self):
-        self.consume('PROGRAM')
+        self.consume("PROGRAM")
         body = []
-        
-        while self.peek() and self.peek().type != 'ENDPROG':
+
+        while self.peek() and self.peek().type != "ENDPROG":
             stmt = self.parse_statement()
             if stmt:
                 body.append(stmt)
-                
-        self.consume('ENDPROG')
+
+        self.consume("ENDPROG")
         return ProgramNode(body)
 
     def parse_statement(self):
         p = self.peek()
-        if not p: return None
+        if not p:
+            return None
 
         t = p.type
 
-        if t in ('TYPE_INT', 'TYPE_DEC', 'TYPE_STR', 'TYPE_BOOL'):
+        if t in ("TYPE_INT", "TYPE_DEC", "TYPE_STR", "TYPE_BOOL"):
             return self.parse_declaration()
-        if t == 'ID':
+        if t == "ID":
             return self.parse_assignment()
-        if t == 'READ':
+        if t == "READ":
             return self.parse_read()
-        if t == 'WHILE':
+        if t == "WHILE":
             return self.parse_while()
-        if t == 'WRITE': return self.parse_write()
-        if t == 'IF': return self.parse_if()
+        if t == "WRITE":
+            return self.parse_write()
+        if t == "IF":
+            return self.parse_if()
 
         self.pos += 1
         return None
 
     def parse_write(self):
-        self.consume('WRITE')
-        self.consume('LPAREN')
+        self.consume("WRITE")
+        self.consume("LPAREN")
         val = ""
-        while self.peek() and self.peek().type != 'RPAREN':
+        while self.peek() and self.peek().type != "RPAREN":
             token = self.consume()
             val += token.value + " "
-        self.consume('RPAREN')
-        self.consume('DOT')
-        
+        self.consume("RPAREN")
+        self.consume("DOT")
+
         return PrintNode(value=val.strip())
 
     def parse_if(self):
-        self.consume('IF')
-        self.consume('LPAREN')
+        self.consume("IF")
+        self.consume("LPAREN")
         cond = ""
-        while self.peek() and self.peek().type != 'RPAREN':
+        while self.peek() and self.peek().type != "RPAREN":
             token = self.consume()
             cond += token.value + " "
-        self.consume('RPAREN')
-        self.consume('LBRACE')
-        
+        self.consume("RPAREN")
+        self.consume("LBRACE")
+
         body = []
-        while self.peek() and self.peek().type != 'RBRACE':
+        while self.peek() and self.peek().type != "RBRACE":
             stmt = self.parse_statement()
-            if stmt: body.append(stmt)
-            
-        self.consume('RBRACE')
-        
+            if stmt:
+                body.append(stmt)
+
+        self.consume("RBRACE")
+
         return IfNode(condition=cond.strip(), body=body)
-    
 
     def parse_declaration(self):
         type_token = self.consume()
         ids = []
 
         while True:
-            token_id = self.consume('ID')
+            token_id = self.consume("ID")
             if not token_id:
                 break
             ids.append(token_id.value)
-            
-            if not self.peek() or self.peek().type != 'COMMA':
-                break
-            self.consume('COMMA')
 
-        self.consume('DOT')
+            if not self.peek() or self.peek().type != "COMMA":
+                break
+            self.consume("COMMA")
+
+        self.consume("DOT")
         return VarDeclNode(var_type=type_token.type, variables=ids)
-    
+
     def parse_assignment(self):
-        var_token = self.consume('ID')
-        self.consume('ASSIGN')
-        
+        var_token = self.consume("ID")
+        self.consume("ASSIGN")
+
         expr = ""
-        while self.peek() and self.peek().type != 'DOT':
+        while self.peek() and self.peek().type != "DOT":
             token = self.consume()
             expr += token.value + " "
-            
-        self.consume('DOT')
+
+        self.consume("DOT")
         return AssignNode(var_name=var_token.value, value=expr.strip())
 
     def parse_read(self):
-        self.consume('READ')
-        self.consume('LPAREN')
-        var_token = self.consume('ID')
-        self.consume('RPAREN')
-        self.consume('DOT')
-        
+        self.consume("READ")
+        self.consume("LPAREN")
+        var_token = self.consume("ID")
+        self.consume("RPAREN")
+        self.consume("DOT")
+
         name = var_token.value if var_token else ""
         return ReadNode(var_name=name)
-    
+
     def parse_while(self):
-        self.consume('WHILE')
-        self.consume('LPAREN')
-        
+        self.consume("WHILE")
+        self.consume("LPAREN")
+
         cond = ""
-        while self.peek() and self.peek().type != 'RPAREN':
+        while self.peek() and self.peek().type != "RPAREN":
             token = self.consume()
             cond += token.value + " "
-            
-        self.consume('RPAREN')
-        self.consume('LBRACE')
-        
+
+        self.consume("RPAREN")
+        self.consume("LBRACE")
+
         body = []
-        while self.peek() and self.peek().type != 'RBRACE':
+        while self.peek() and self.peek().type != "RBRACE":
             stmt = self.parse_statement()
             if stmt:
                 body.append(stmt)
-                
-        self.consume('RBRACE')
+
+        self.consume("RBRACE")
         return WhileNode(condition=cond.strip(), body=body)
-    

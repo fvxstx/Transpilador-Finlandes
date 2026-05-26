@@ -1,12 +1,13 @@
 import threading
 import tkinter as tk
-from tkinter import scrolledtext
 from queue import Queue
+from tkinter import scrolledtext
 
-from Front.analisador import Parser
-from Front.gerador import PythonCodeGenerator
 from config import DICTIONARY
+from front.analisador import Parser
+from front.gerador import PythonCodeGenerator
 from lexer import tokenize
+
 
 class InterfaceApp:
     def __init__(self, root):
@@ -14,7 +15,7 @@ class InterfaceApp:
         self.root.title("Finlandês IDE - Professional Edition")
 
         try:
-            self.root.state('zoomed')
+            self.root.state("zoomed")
         except:
             pass
 
@@ -24,7 +25,7 @@ class InterfaceApp:
             "text": "#e0e0e0",
             "accent": "#00aaff",
             "term_bg": "#0a0a0a",
-            "green": "#4caf50"
+            "green": "#4caf50",
         }
 
         self.input_queue = Queue()
@@ -45,7 +46,7 @@ class InterfaceApp:
             ("Dicionário", "dict"),
             ("Código Finlandês", "in"),
             ("Tradução Python", "out"),
-            ("Terminal Real", "term")
+            ("Terminal Real", "term"),
         ]
 
         self.widgets = {}
@@ -62,7 +63,7 @@ class InterfaceApp:
                 text=title.upper(),
                 font=("Segoe UI", 9, "bold"),
                 bg=self.colors["bg"],
-                fg=self.colors["accent"]
+                fg=self.colors["accent"],
             ).pack(pady=2)
 
             bg_color = self.colors["term_bg"] if key == "term" else "#1e1e1e"
@@ -74,7 +75,7 @@ class InterfaceApp:
                 bg=bg_color,
                 fg=fg_color,
                 insertbackground="white",
-                bd=0
+                bd=0,
             )
 
             txt.pack(fill=tk.BOTH, expand=True)
@@ -96,7 +97,7 @@ class InterfaceApp:
             font=("Segoe UI", 10, "bold"),
             relief=tk.FLAT,
             padx=20,
-            pady=8
+            pady=8,
         )
         self.run_btn.pack(pady=10)
 
@@ -128,27 +129,27 @@ class InterfaceApp:
 
     def load_calculator_example(self):
         code = (
-            'ohjelma\n'
-            '  kokonaisluku opção, n1, n2, res.\n'
-            '  opção := 0.\n'
-            '  kunnes (opção != 9) {\n'
+            "ohjelma\n"
+            "  kokonaisluku opção, n1, n2, res.\n"
+            "  opção := 0.\n"
+            "  kunnes (opção != 9) {\n"
             '    kirjoita("--- CALCULADORA ---").\n'
             '    kirjoita("1:Soma | 2:Sub | 3:Mult | 4:Div | 9:Sair").\n'
             '    kirjoita("Escolha:").\n'
-            '    lue(opção).\n\n'
+            "    lue(opção).\n\n"
             '    jos (opção == 9) { kirjoita("Adeus!"). }\n\n'
-            '    jos (opção < 5) {\n'
+            "    jos (opção < 5) {\n"
             '      kirjoita("Numero 1:"). lue(n1).\n'
             '      kirjoita("Numero 2:"). lue(n2).\n\n'
-            '      jos (opção == 1) { res := n1 + n2. }\n'
-            '      jos (opção == 2) { res := n1 - n2. }\n'
-            '      jos (opção == 3) { res := n1 * n2. }\n'
-            '      jos (opção == 4) { res := n1 / n2. }\n'
+            "      jos (opção == 1) { res := n1 + n2. }\n"
+            "      jos (opção == 2) { res := n1 - n2. }\n"
+            "      jos (opção == 3) { res := n1 * n2. }\n"
+            "      jos (opção == 4) { res := n1 / n2. }\n"
             '      kirjoita("Resultado:").\n'
-            '      kirjoita(res).\n'
-            '    }\n'
-            '  }\n'
-            'loppu'
+            "      kirjoita(res).\n"
+            "    }\n"
+            "  }\n"
+            "loppu"
         )
         self.widgets["in"].insert("1.0", code)
         self.update_translation()
@@ -157,7 +158,7 @@ class InterfaceApp:
         try:
             raw_text = self.widgets["in"].get("1.0", tk.END)
             tokens = tokenize(raw_text)
-            
+
             ast_tree = Parser(tokens).parse_program()
             py_code = PythonCodeGenerator().generate(ast_tree)
 
@@ -186,11 +187,14 @@ class InterfaceApp:
             val = self.input_queue.get()
             val_lower = val.lower()
 
-            if val_lower in ("tosi", "true"): return True
-            if val_lower in ("epätosi", "false"): return False
+            if val_lower in ("tosi", "true"):
+                return True
+            if val_lower in ("epätosi", "false"):
+                return False
 
             try:
-                if '.' in val: return float(val)
+                if "." in val:
+                    return float(val)
                 return int(val)
             except:
                 return val
@@ -201,10 +205,7 @@ class InterfaceApp:
             self.widgets["term"].see(tk.END)
 
         try:
-            exec(py_code, {
-                "terminal_input": terminal_input,
-                "print": custom_print
-            })
+            exec(py_code, {"terminal_input": terminal_input, "print": custom_print})
         except Exception as e:
             custom_print(f"\nERRO DE EXECUÇÃO: {e}")
         finally:

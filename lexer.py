@@ -1,5 +1,7 @@
 import re
+
 from config import Token, regex
+
 
 def tokenize(text):
     pos = 0
@@ -13,7 +15,7 @@ def tokenize(text):
 
         kind, value = match.lastgroup, match.group()
 
-        if kind != 'WS':
+        if kind != "WS":
             yield Token(kind, value)
 
         pos += len(value)
