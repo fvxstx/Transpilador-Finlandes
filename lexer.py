@@ -1,6 +1,8 @@
 import re
 
-from config import Token, regex
+from config import TOKEN_SPEC, Token
+
+regex = "|".join(f"(?P<{name}>{pattern})" for name, pattern in TOKEN_SPEC)
 
 
 def tokenize(text):
@@ -15,7 +17,7 @@ def tokenize(text):
 
         kind, value = match.lastgroup, match.group()
 
-        if kind != "WS":
+        if kind is not None and kind != "WS":
             yield Token(kind, value)
 
         pos += len(value)

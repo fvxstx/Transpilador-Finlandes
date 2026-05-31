@@ -1,14 +1,12 @@
 from dataclasses import dataclass
 
 
-# --- DATA STRUCTURE ---
 @dataclass
 class Token:
     type: str
     value: str
 
 
-# --- LANGUAGE CONFIGURATION ---
 DICTIONARY = {
     "COMMANDS": {
         "ohjelma": "Início do programa",
@@ -68,5 +66,3 @@ TOKEN_SPEC = [
     ("DOT", r"\."),
     ("WS", r"\s+"),
 ]
-
-regex = "|".join(f"(?P<{name}>{pattern})" for name, pattern in TOKEN_SPEC)
