@@ -1,3 +1,5 @@
+import pytest
+
 from lexer import tokenize
 
 
@@ -89,6 +91,26 @@ def test_tokeniza_literais_e_identificadores():
         ("STRING", '"Hello, world"'),
         ("ID", "my_foo"),
     ]
+
+    resultado = [(token.type, token.value) for token in tokens]
+
+    assert resultado == esperado
+
+
+def test_tokeniza_caractere_invalido():
+    codigo = "ohjelma @ loppu"  # O @ não faz parte do nosso TOKEN_SPEC
+
+    with pytest.raises(ValueError) as err:
+        list(tokenize(codigo))
+
+    assert "Caractere inválido: @" in str(err.value)
+
+
+def test_identificador_com_prefixo_de_keyword():
+    codigo = "josebahia loppuminha tosivida"
+    tokens = list(tokenize(codigo))
+
+    esperado = [("ID", "josebahia"), ("ID", "loppuminha"), ("ID", "tosivida")]
 
     resultado = [(token.type, token.value) for token in tokens]
 

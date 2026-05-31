@@ -19,7 +19,7 @@ class VarDeclNode(ASTNode):
 @dataclass
 class AssignNode(ASTNode):
     var_name: str
-    value: str  # For now, we'll keep expressions as raw strings
+    value: str
 
 
 @dataclass

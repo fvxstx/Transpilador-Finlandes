@@ -12,8 +12,7 @@ def tokenize(text):
         match = re.match(regex, text[pos:])
 
         if not match:
-            pos += 1
-            continue
+            raise ValueError(f"Caractere inválido: {text[pos]}")
 
         kind, value = match.lastgroup, match.group()
 
