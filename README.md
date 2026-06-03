@@ -8,7 +8,7 @@
 | Fausto Bento Torres | 1272521583 |
 | Rafael Pereira Grigorio de Lacerda | 1272526033 |
 | José Felipe Amorim Gerez | 12725158186 |
-| Vinicius Lacerda | 000000 |
+| Vinicius Lacerda Santos | 12725210686 |
 | Yuri Cruz Torquato | 12724219602 |
 
 ---
