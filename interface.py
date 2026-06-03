@@ -1,6 +1,6 @@
 import threading
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import scrolledtext, filedialog
 from queue import Queue
 
 from Front.analisador import Parser
@@ -87,6 +87,19 @@ class InterfaceApp:
         btn_frame = tk.Frame(self.root, bg=self.colors["bg"])
         btn_frame.pack(fill=tk.X)
 
+        self.load_btn = tk.Button(
+            btn_frame,
+            text="CARREGAR ARQUIVO",
+            command=self.abrir_arquivo,
+            bg="#ff9800",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            relief=tk.FLAT,
+            padx=20,
+            pady=8
+        )
+        self.load_btn.pack(pady=5)
+
         self.run_btn = tk.Button(
             btn_frame,
             text="EXECUTAR PROGRAMA (RUN)",
@@ -99,6 +112,25 @@ class InterfaceApp:
             pady=8
         )
         self.run_btn.pack(pady=10)
+
+    def abrir_arquivo(self):
+        caminho = filedialog.askopenfilename(
+            title="Selecione o código-fonte",
+            filetypes=[
+                ("Arquivos Finlandês", "*.novaextensaofinlandes"),
+                ("Textos", "*.txt"),
+                ("Todos", "*.*")
+            ]
+        )
+        if caminho:
+            try:
+                with open(caminho, 'r', encoding='utf-8') as f:
+                    conteudo = f.read()
+                self.widgets["in"].delete("1.0", tk.END)
+                self.widgets["in"].insert("1.0", conteudo)
+                self.update_translation()
+            except Exception as e:
+                pass    
 
     def handle_backspace(self, event):
         if self.widgets["term"].compare("insert", "<=", self.prompt_index):
