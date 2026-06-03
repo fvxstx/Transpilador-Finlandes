@@ -27,7 +27,23 @@ class Parser:
         return self.tokens[self.pos] if self.pos < len(self.tokens) else None
 
     def parse_program(self):
+        # self.consume("PROGRAM")
+        # body = []
+
+        # while self.peek() and self.peek().type != "ENDPROG":
+        #     stmt = self.parse_statement()
+        #     if stmt:
+        #         body.append(stmt)
+
+        # self.consume("ENDPROG")
+        # return ProgramNode(body)
+
+        if not self.peek() or self.peek().type != "PROGRAM":
+            raise SyntaxError(
+                "Erro de sintaxe: O programa deve começar com a palavra reservada 'ohjelma'."
+            )
         self.consume("PROGRAM")
+
         body = []
 
         while self.peek() and self.peek().type != "ENDPROG":
@@ -35,7 +51,12 @@ class Parser:
             if stmt:
                 body.append(stmt)
 
+        if not self.peek() or self.peek().type != "ENDPROG":
+            raise SyntaxError(
+                "Erro de sintaxe: O programa deve terminar com a palavra reservada 'loppu'."
+            )
         self.consume("ENDPROG")
+
         return ProgramNode(body)
 
     def parse_statement(self):
@@ -62,13 +83,30 @@ class Parser:
         return None
 
     def parse_write(self):
+        # self.consume("WRITE")
+        # self.consume("LPAREN")
+        # val = ""
+        # while self.peek() and self.peek().type != "RPAREN":
+        #     token = self.consume()
+        #     val += token.value + " "
+        # self.consume("RPAREN")
+        # self.consume("DOT")
+
+        # return PrintNode(value=val.strip())
+
         self.consume("WRITE")
         self.consume("LPAREN")
         val = ""
+
         while self.peek() and self.peek().type != "RPAREN":
             token = self.consume()
             val += token.value + " "
         self.consume("RPAREN")
+
+        if not self.peek() or self.peek().type != "DOT":
+            raise SyntaxError(
+                "Erro de sintaxe: Esperado um ponto '.' no final do comando 'kirjoita'"
+            )
         self.consume("DOT")
 
         return PrintNode(value=val.strip())
