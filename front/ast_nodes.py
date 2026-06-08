@@ -36,6 +36,7 @@ class ReadNode(ASTNode):
 class IfNode(ASTNode):
     condition: str
     body: list[ASTNode]
+    else_body: list[ASTNode] = None
 
 
 @dataclass

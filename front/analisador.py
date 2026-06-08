@@ -129,7 +129,18 @@ class Parser:
 
         self.consume("RBRACE")
 
-        return IfNode(condition=cond.strip(), body=body)
+        else_body = None
+        if self.peek() and self.peek().type == "ELSE":
+            self.consume("ELSE")
+            self.consume("LBRACE")
+            else_body = []
+            while self.peek() and self.peek().type != "RBRACE":
+                stmt = self.parse_statement()
+                if stmt:
+                    else_body.append(stmt)
+            self.consume("RBRACE")
+
+        return IfNode(condition=cond.strip(), body=body, else_body=else_body)
 
     def parse_declaration(self):
         type_token = self.consume()

@@ -47,6 +47,14 @@ class PythonCodeGenerator:
                     code += self.generate(stmt)
 
             self.indent_level -= 1
+
+            if node.else_body:
+                code += f"{self.get_indent()}else:\n"
+                self.indent_level += 1
+                for stmt in node.else_body:
+                    code += self.generate(stmt)
+                self.indent_level -= 1
+
             return code
 
         elif isinstance(node, VarDeclNode):
