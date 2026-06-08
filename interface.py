@@ -1,15 +1,20 @@
 import threading
 import tkinter as tk
-from tkinter import scrolledtext, filedialog
 from queue import Queue
+from tkinter import scrolledtext
+from typing import Any, Dict
 
-from Front.analisador import Parser
-from Front.gerador import PythonCodeGenerator
 from config import DICTIONARY
+from front.analisador import Parser
+from front.gerador import PythonCodeGenerator
 from lexer import tokenize
 
+
 class InterfaceApp:
-    def __init__(self, root):
+    OUTPUT_POLL_INTERVAL = 100
+    TERMINAL_PROMPT = "{} > "
+
+    def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("Finlandês IDE - Professional Edition")
 
@@ -18,148 +23,154 @@ class InterfaceApp:
         except:
             pass
 
-        self.colors = {
+        self.colors: Dict[str, str] = {
             "bg": "#121212",
             "sidebar": "#1e1e1e",
             "text": "#e0e0e0",
             "accent": "#00aaff",
             "term_bg": "#0a0a0a",
-            "green": "#4caf50"
+            "green": "#4caf50",
+        }
+
+        self.fonts: Dict[str, Any] = {
+            "title": ("Segoe UI", 9, "bold"),
+            "editor": ("Consolas", 11),
+            "button": ("Segoe UI", 10, "bold"),
         }
 
         self.input_queue = Queue()
+        self.output_queue = Queue()
         self.is_running = False
         self.prompt_index = "1.0"
+        self.widgets: Dict[str, scrolledtext.ScrolledText] = {}
 
         self.setup_ui()
         self.load_dictionary()
         self.load_calculator_example()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         self.root.configure(bg=self.colors["bg"])
 
         main_frame = tk.Frame(self.root, bg=self.colors["bg"])
         main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        cols = [
+        columns = [
             ("Dicionário", "dict"),
             ("Código Finlandês", "in"),
             ("Tradução Python", "out"),
-            ("Terminal Real", "term")
+            ("Terminal Real", "term"),
         ]
 
-        self.widgets = {}
+        for index, (label_text, key) in enumerate(columns):
+            column_frame = tk.Frame(main_frame, bg=self.colors["bg"])
+            column_frame.grid(row=0, column=index, sticky="nsew", padx=2)
 
-        for i, (title, key) in enumerate(cols):
-            f = tk.Frame(main_frame, bg=self.colors["bg"])
-            f.grid(row=0, column=i, sticky="nsew", padx=2)
-
-            main_frame.grid_columnconfigure(i, weight=1)
+            main_frame.grid_columnconfigure(index, weight=1)
             main_frame.grid_rowconfigure(0, weight=1)
 
             tk.Label(
-                f,
-                text=title.upper(),
-                font=("Segoe UI", 9, "bold"),
+                column_frame,
+                text=label_text.upper(),
+                font=self.fonts["title"],
                 bg=self.colors["bg"],
                 fg=self.colors["accent"]
             ).pack(pady=2)
 
-            bg_color = self.colors["term_bg"] if key == "term" else "#1e1e1e"
-            fg_color = "#00ff00" if key == "term" else self.colors["text"]
+            background = self.colors["term_bg"] if key == "term" else "#1e1e1e"
+            foreground = "#00ff00" if key == "term" else self.colors["text"]
 
-            txt = scrolledtext.ScrolledText(
-                f,
-                font=("Consolas", 11),
-                bg=bg_color,
-                fg=fg_color,
+            widget = scrolledtext.ScrolledText(
+                column_frame,
+                font=self.fonts["editor"],
+                bg=background,
+                fg=foreground,
                 insertbackground="white",
                 bd=0
             )
-
-            txt.pack(fill=tk.BOTH, expand=True)
-            self.widgets[key] = txt
+            widget.pack(fill=tk.BOTH, expand=True)
+            self.widgets[key] = widget
 
         self.widgets["in"].bind("<KeyRelease>", self.update_translation)
         self.widgets["term"].bind("<Return>", self.handle_terminal_enter)
         self.widgets["term"].bind("<BackSpace>", self.handle_backspace)
 
-        btn_frame = tk.Frame(self.root, bg=self.colors["bg"])
-        btn_frame.pack(fill=tk.X)
-
-        self.load_btn = tk.Button(
-            btn_frame,
-            text="CARREGAR ARQUIVO",
-            command=self.abrir_arquivo,
-            bg="#ff9800",
-            fg="white",
-            font=("Segoe UI", 10, "bold"),
-            relief=tk.FLAT,
-            padx=20,
-            pady=8
-        )
-        self.load_btn.pack(pady=5)
+        button_frame = tk.Frame(self.root, bg=self.colors["bg"])
+        button_frame.pack(fill=tk.X)
 
         self.run_btn = tk.Button(
-            btn_frame,
+            button_frame,
             text="EXECUTAR PROGRAMA (RUN)",
             command=self.start_execution_thread,
             bg=self.colors["green"],
             fg="white",
-            font=("Segoe UI", 10, "bold"),
+            font=self.fonts["button"],
             relief=tk.FLAT,
             padx=20,
-            pady=8
+            pady=8,
         )
         self.run_btn.pack(pady=10)
 
-    def abrir_arquivo(self):
-        caminho = filedialog.askopenfilename(
-            title="Selecione o código-fonte",
-            filetypes=[
-                ("Arquivos Finlandês", "*.novaextensaofinlandes"),
-                ("Textos", "*.txt"),
-                ("Todos", "*.*")
-            ]
-        )
-        if caminho:
-            try:
-                with open(caminho, 'r', encoding='utf-8') as f:
-                    conteudo = f.read()
-                self.widgets["in"].delete("1.0", tk.END)
-                self.widgets["in"].insert("1.0", conteudo)
-                self.update_translation()
-            except Exception as e:
-                pass    
+        self.set_widget_state("dict", tk.DISABLED)
+        self.set_widget_state("out", tk.DISABLED)
 
-    def handle_backspace(self, event):
+    def set_widget_state(self, key: str, state: str) -> None:
+        widget = self.widgets[key]
+        widget.config(state=state)
+
+    def append_terminal_output(self, message: str, prompt: bool = False) -> None:
+        self.output_queue.put((message, prompt))
+
+    def process_terminal_output(self) -> None:
+        terminal = self.widgets["term"]
+        while not self.output_queue.empty():
+            message, is_prompt = self.output_queue.get()
+            terminal.config(state=tk.NORMAL)
+            terminal.insert(tk.END, message)
+            if is_prompt:
+                self.prompt_index = terminal.index(tk.END)
+            terminal.see(tk.END)
+            terminal.config(state=tk.NORMAL)
+
+        if self.is_running or not self.output_queue.empty():
+            self.root.after(self.OUTPUT_POLL_INTERVAL, self.process_terminal_output)
+
+    def handle_backspace(self, event: tk.Event) -> str:
         if self.widgets["term"].compare("insert", "<=", self.prompt_index):
             return "break"
+        return ""
 
-    def handle_terminal_enter(self, event):
+    def handle_terminal_enter(self, event: tk.Event) -> str:
         if not self.is_running:
             return "break"
 
-        input_data = self.widgets["term"].get(self.prompt_index, tk.END).strip()
+        line_start = self.widgets["term"].index("insert linestart")
+        current_line = self.widgets["term"].get(line_start, tk.END).strip()
+
+        if ">" in current_line:
+            user_input = current_line.split(">", 1)[-1].strip()
+        else:
+            user_input = current_line
+
         self.widgets["term"].insert(tk.END, "\n")
-        self.input_queue.put(input_data)
         self.widgets["term"].see(tk.END)
+        self.input_queue.put(user_input)
         return "break"
 
-    def load_dictionary(self):
-        text = "REFERÊNCIA DE SINTAXE\n" + "━" * 25 + "\n\n"
-        for cat, items in DICTIONARY.items():
-            text += f"[{cat}]\n"
-            for k, v in items.items():
-                text += f"{k.ljust(15)} : {v}\n"
-            text += "\n"
+    def load_dictionary(self) -> None:
+        dictionary_text = "REFERÊNCIA DE SINTAXE\n" + "━" * 25 + "\n\n"
+        for category, items in DICTIONARY.items():
+            dictionary_text += f"[{category}]\n"
+            for token, description in items.items():
+                dictionary_text += f"{token.ljust(15)} : {description}\n"
+            dictionary_text += "\n"
 
-        self.widgets["dict"].config(state=tk.NORMAL)
-        self.widgets["dict"].insert("1.0", text)
-        self.widgets["dict"].config(state=tk.DISABLED)
+        self.set_widget_state("dict", tk.NORMAL)
+        self.widgets["dict"].delete("1.0", tk.END)
+        self.widgets["dict"].insert("1.0", dictionary_text)
+        self.set_widget_state("dict", tk.DISABLED)
 
-    def load_calculator_example(self):
-        code = (
+    def load_calculator_example(self) -> None:
+        example_code = (
             'ohjelma\n'
             '  kokonaisluku opção, n1, n2, res.\n'
             '  opção := 0.\n'
@@ -182,63 +193,74 @@ class InterfaceApp:
             '  }\n'
             'loppu'
         )
-        self.widgets["in"].insert("1.0", code)
+
+        self.widgets["in"].delete("1.0", tk.END)
+        self.widgets["in"].insert("1.0", example_code)
         self.update_translation()
 
-    def update_translation(self, event=None):
+    def update_translation(self, event: tk.Event | None = None) -> None:
         try:
             raw_text = self.widgets["in"].get("1.0", tk.END)
             tokens = tokenize(raw_text)
-            
             ast_tree = Parser(tokens).parse_program()
-            py_code = PythonCodeGenerator().generate(ast_tree)
+            generated_code = PythonCodeGenerator().generate(ast_tree)
+        except Exception as error:
+            generated_code = f"# Erro de tradução:\n# {error}\n"
 
-            self.widgets["out"].config(state=tk.NORMAL)
-            self.widgets["out"].delete("1.0", tk.END)
-            self.widgets["out"].insert("1.0", py_code)
-            self.widgets["out"].config(state=tk.DISABLED)
-        except Exception:
-            pass
+        self.set_widget_state("out", tk.NORMAL)
+        self.widgets["out"].delete("1.0", tk.END)
+        self.widgets["out"].insert("1.0", generated_code)
+        self.set_widget_state("out", tk.DISABLED)
 
-    def start_execution_thread(self):
+    def start_execution_thread(self) -> None:
         if self.is_running:
             return
+
+        self.input_queue = Queue()
+        self.output_queue = Queue()
+        self.widgets["term"].config(state=tk.NORMAL)
+        self.set_widget_state("term", tk.NORMAL)
         self.widgets["term"].delete("1.0", tk.END)
         self.widgets["term"].insert(tk.END, "--- INICIANDO EXECUÇÃO ---\n")
-        self.is_running = True
-        threading.Thread(target=self.execute_code, daemon=True).start()
+        self.widgets["term"].see(tk.END)
 
-    def execute_code(self):
-        py_code = self.widgets["out"].get("1.0", tk.END)
+        self.is_running = True
+        self.run_btn.config(state=tk.DISABLED)
+        threading.Thread(target=self.execute_code, daemon=True).start()
+        self.root.after(self.OUTPUT_POLL_INTERVAL, self.process_terminal_output)
+
+    def execute_code(self) -> None:
+        python_code = self.widgets["out"].get("1.0", tk.END)
 
         def terminal_input(var_name):
-            self.widgets["term"].insert(tk.END, f"{var_name} > ")
-            self.widgets["term"].see(tk.END)
-            self.prompt_index = self.widgets["term"].index("insert")
-            val = self.input_queue.get()
+            self.append_terminal_output(f"{var_name} > ", prompt=True)
+            val = self.input_queue.get().strip()
             val_lower = val.lower()
 
-            if val_lower in ("tosi", "true"): return True
-            if val_lower in ("epätosi", "false"): return False
+            if val_lower in ("tosi", "true"):
+                return True
+            if val_lower in ("epätosi", "false"):
+                return False
 
             try:
-                if '.' in val: return float(val)
+                if '.' in val:
+                    return float(val)
                 return int(val)
-            except:
+            except Exception:
                 return val
 
-        def custom_print(*args):
-            msg = " ".join(map(str, args)) + "\n"
-            self.widgets["term"].insert(tk.END, msg)
-            self.widgets["term"].see(tk.END)
+        def custom_print(*args: Any) -> None:
+            message = " ".join(map(str, args)) + "\n"
+            self.append_terminal_output(message)
 
         try:
-            exec(py_code, {
+            exec(python_code, {
                 "terminal_input": terminal_input,
-                "print": custom_print
+                "print": custom_print,
             })
         except Exception as e:
             custom_print(f"\nERRO DE EXECUÇÃO: {e}")
         finally:
             self.is_running = False
+            self.run_btn.config(state=tk.NORMAL)
             custom_print("\n--- PROGRAMA FINALIZADO ---")

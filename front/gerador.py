@@ -1,4 +1,13 @@
-from Front.ast_nodes import ASTNode, AssignNode, IfNode, PrintNode, ProgramNode, ReadNode, VarDeclNode, WhileNode
+from front.ast_nodes import (
+    AssignNode,
+    ASTNode,
+    IfNode,
+    PrintNode,
+    ProgramNode,
+    ReadNode,
+    VarDeclNode,
+    WhileNode,
+)
 
 
 class PythonCodeGenerator:
@@ -30,30 +39,38 @@ class PythonCodeGenerator:
             cond = self.convert_expression(node.condition)
             code = f"{self.get_indent()}if {cond}:\n"
             self.indent_level += 1
-            
+
             if not node.body:
                 code += f"{self.get_indent()}pass\n"
             else:
                 for stmt in node.body:
                     code += self.generate(stmt)
-                    
+
             self.indent_level -= 1
+
+            if node.else_body:
+                code += f"{self.get_indent()}else:\n"
+                self.indent_level += 1
+                for stmt in node.else_body:
+                    code += self.generate(stmt)
+                self.indent_level -= 1
+
             return code
 
         elif isinstance(node, VarDeclNode):
             default_value = "0"
-            if node.var_type == 'TYPE_DEC':
+            if node.var_type == "TYPE_DEC":
                 default_value = "0.0"
-            elif node.var_type == 'TYPE_STR':
+            elif node.var_type == "TYPE_STR":
                 default_value = '""'
-            elif node.var_type == 'TYPE_BOOL':
+            elif node.var_type == "TYPE_BOOL":
                 default_value = "False"
-                
+
             code = ""
             for var in node.variables:
                 code += f"{self.get_indent()}{var} = {default_value}\n"
             return code
-        
+
         elif isinstance(node, AssignNode):
             val = self.convert_expression(node.value)
             return f"{self.get_indent()}{node.var_name} = {val}\n"
@@ -64,7 +81,7 @@ class PythonCodeGenerator:
         elif isinstance(node, WhileNode):
             cond = self.convert_expression(node.condition)
             code = f"{self.get_indent()}while {cond}:\n"
-            
+
             self.indent_level += 1
             if not node.body:
                 code += f"{self.get_indent()}pass\n"
@@ -72,8 +89,7 @@ class PythonCodeGenerator:
                 for stmt in node.body:
                     code += self.generate(stmt)
             self.indent_level -= 1
-            
+
             return code
-        
+
         return ""
-        
