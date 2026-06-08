@@ -1,37 +1,45 @@
 from dataclasses import dataclass
-from typing import List, Any
+
 
 class ASTNode:
     pass
 
+
 @dataclass
 class ProgramNode(ASTNode):
-    body: List[ASTNode]
+    body: list[ASTNode]
+
 
 @dataclass
 class VarDeclNode(ASTNode):
     var_type: str
-    variables: List[str]
+    variables: list[str]
+
 
 @dataclass
 class AssignNode(ASTNode):
     var_name: str
-    value: str  # For now, we'll keep expressions as raw strings
+    value: str
+
 
 @dataclass
 class PrintNode(ASTNode):
     value: str
 
+
 @dataclass
 class ReadNode(ASTNode):
     var_name: str
 
+
 @dataclass
 class IfNode(ASTNode):
     condition: str
-    body: List[ASTNode]
+    body: list[ASTNode]
+    else_body: list[ASTNode] = None
+
 
 @dataclass
 class WhileNode(ASTNode):
     condition: str
-    body: List[ASTNode]
+    body: list[ASTNode]
