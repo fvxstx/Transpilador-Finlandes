@@ -111,11 +111,15 @@ ohjelma
 
 kokonaisluku idade.
 
-kirjoita("Digite sua idade").
+kirjoita("Digite sua idade:").
 lue(idade).
 
 jos (idade >= 18) {
     kirjoita("Maior de idade").
+}
+
+jos (idade < 18) {
+    kirjoita("Menor de idade").
 }
 
 loppu
@@ -126,12 +130,12 @@ Código Python gerado:
 ```python
 def run_program():
     idade = 0
-
-    print("Digite sua idade")
-    idade = terminal_input("idade")
-
+    print("Digite sua idade:")
+    idade = terminal_input('idade')
     if idade >= 18:
         print("Maior de idade")
+    if idade < 18:
+        print("Menor de idade")
 
 run_program()
 ```
