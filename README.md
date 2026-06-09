@@ -6,6 +6,9 @@
 - **Projeto:** Desenvolvimento de um Transpilador (Finlandês)
 - **Linguagem Usada:** Python
   
+## Slide de apresentação
+https://drive.google.com/file/d/1qdd4a3OpO5frnSGnob8joQXhJlMRAbV7/view?usp=drivesdk
+
 ## Download no Drive
 [📥 Baixar Executável (.exe)](https://drive.google.com/file/d/1vUV6gdXXJC8DtWe6ccLXiB1CGAJzwND3/view?usp=sharing)
 
