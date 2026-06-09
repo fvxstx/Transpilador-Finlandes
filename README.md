@@ -9,6 +9,11 @@
 ## Download no Drive
 [📥 Baixar Executável (.exe)](https://drive.google.com/file/d/1vUV6gdXXJC8DtWe6ccLXiB1CGAJzwND3/view?usp=sharing)
 
+- Após o Download
+<img width="539" height="508" alt="Screenshot 2026-06-09 175743" src="https://github.com/user-attachments/assets/06bcea25-e5a7-425b-ace8-df40dbc0e8f8" />
+<img width="542" height="510" alt="Screenshot 2026-06-09 175739" src="https://github.com/user-attachments/assets/668c05fe-99ad-4f99-9551-2d2f8d3fbba6" />
+<img width="1919" height="1029" alt="Screenshot 2026-06-09 175751" src="https://github.com/user-attachments/assets/97254c6c-66c6-4abf-a56f-dc28ff514c1f" />
+
 ### Autores
 
 | Nome | RA |
@@ -84,13 +89,19 @@ O projeto foi desenvolvido utilizando recursos nativos da linguagem Python, sem 
 
 ---
 
-# 4. Como Executar o Projeto
+# 4. Como Executar o Projeto Pelo Codigo
 
 ## 4.1 Pré-requisitos
 
 - Python 3 instalado na máquina
 
 ## 4.2 Execução
+
+Clone o projeto:
+
+```bash
+git clone https://github.com/fvxstx/Transpilador-Finlandes.git
+```
 
 Abra o terminal na pasta do projeto e execute:
 
