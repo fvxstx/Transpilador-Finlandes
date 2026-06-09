@@ -25,7 +25,7 @@
 
 Este projeto consiste em um **transpilador na lingua finlandesa usando Python**, acompanhado de uma **IDE própria desenvolvida em Tkinter**.
 
-O objetivo principal do projeto é demonstrar visualmente o funcionamento interno de um compilador/transpilador utilizando conceitos clássicos da área de compiladores:
+O objetivo principal do projeto é demonstrar visualmente o funcionamento interno de um transpilador utilizando conceitos clássicos da área de compiladores:
 
 - Análise Léxica (Lexer)
 - Análise Sintática (Parser)
@@ -36,7 +36,7 @@ O objetivo principal do projeto é demonstrar visualmente o funcionamento intern
 
 Diferente de um compilador tradicional que gera código binário, este projeto realiza uma **transpilação**, convertendo código escrito em uma linguagem para outra linguagem de alto nível (Python).
 
-Todo o processo ocorre em tempo real dentro da própria IDE.
+Todo o processo ocorre interativamente dentro da própria IDE.
 
 ---
 
@@ -59,11 +59,11 @@ Para isso, foi criada uma linguagem simples e educativa utilizando palavras insp
 
 O projeto foi desenvolvido utilizando recursos nativos da linguagem Python, sem a necessidade de frameworks externos.
 
-### Linguagem
+### 3.1 Linguagem
 
 - Python 3
 
-### Bibliotecas Utilizadas
+### 3.2 Bibliotecas Utilizadas
 
 - Tkinter (Interface Gráfica)
 - threading (Execução paralela)
@@ -71,7 +71,7 @@ O projeto foi desenvolvido utilizando recursos nativos da linguagem Python, sem 
 - re (Expressões regulares)
 - dataclasses (Estruturas de dados)
 
-### Paradigmas e Conceitos Aplicados
+### 3.3 Paradigmas e Conceitos Aplicados
 
 - Programação Orientada a Objetos (POO)
 - Expressões Regulares
@@ -86,16 +86,16 @@ O projeto foi desenvolvido utilizando recursos nativos da linguagem Python, sem 
 
 # 4. Como Executar o Projeto
 
-## Pré-requisitos
+## 4.1 Pré-requisitos
 
 - Python 3 instalado na máquina
 
-## Execução
+## 4.2 Execução
 
 Abra o terminal na pasta do projeto e execute:
 
 ```bash
-python main.py
+python src/transpilador/main.py
 ```
 
 Após a execução, a IDE será aberta automaticamente.
@@ -166,20 +166,33 @@ Terminal Integrado
 
 ---
 
-# 7. Estrutura do Projeto
+# 7. Estrutura da parte principal do Projeto
 
 ```plaintext
-Projeto
-│
-├── Front/
-│   ├── analisador.py
-│   ├── ast_nodes.py
-│   └── gerador.py
-│
-├── interface.py
-├── lexer.py
-├── config.py
-└── main.py
+src/
+└── transpilador/
+    │
+    ├── codegen/
+    │   ├── __init__.py
+    │   ├── gerador.py
+    │
+    ├── interface/
+    │   ├── __init__.py
+    │   ├── interface.py
+    │
+    ├── lexer/
+    │   ├── __init__.py
+    │   ├── lexer.py
+    │
+    ├── parser/
+    │   ├── __init__.py
+    │   ├── analisador.py
+    │   ├── ast_nodes.py
+    │
+    │
+    ├── __init__.py
+    ├── config.py
+    └── main.py
 ```
 
 ---
@@ -298,7 +311,7 @@ DOT
 Arquivo:
 
 ```plaintext
-Front/analisador.py
+src/transpilador/parser/analisador.py
 ```
 
 Responsável por transformar tokens em uma árvore lógica.
@@ -447,7 +460,7 @@ Representação estruturada do programa.
 Arquivo:
 
 ```plaintext
-ast_nodes.py
+src/transpilador/parser/ast_nodes.py
 ```
 
 Classes:
@@ -485,7 +498,7 @@ AssignNode
 Arquivo:
 
 ```plaintext
-gerador.py
+src/transpilador/codegen/gerador.py
 ```
 
 Classe:
@@ -586,7 +599,7 @@ print("Texto")
 Arquivo:
 
 ```plaintext
-interface.py
+src/transpilador/interface/interface.py
 ```
 
 A IDE foi desenvolvida utilizando Tkinter.
@@ -737,3 +750,145 @@ Escrever → Tokenizar → Interpretar → Gerar → Executar
 ```
 
 ---
+
+# 18. Testes:
+
+### 18.1 Contador regressivo
+```
+ohjelma
+
+kokonaisluku x.
+
+kirjoita("Comecar em").
+lue(x).
+
+kunnes (x > 0) {
+
+    kirjoita(x).
+
+    x := x - 1.
+}
+
+kirjoita("FIM").
+
+loppu
+```
+
+### 18.2 Tabuada simples
+```
+ohjelma
+
+kokonaisluku n, i.
+
+kirjoita("Numero").
+lue(n).
+
+i := 1.
+
+kunnes (i <= 10) {
+
+    kirjoita(n * i).
+
+    i := i + 1.
+}
+
+loppu
+```
+
+### 18.3 Simulador de idade
+```
+ohjelma
+
+kokonaisluku idade.
+
+kirjoita("Sua idade").
+lue(idade).
+
+kirjoita("Em 10 anos voce tera").
+
+idade := idade + 10.
+
+kirjoita(idade).
+
+loppu
+```
+
+### 18.4 Média de 3 números
+```
+ohjelma
+
+kokonaisluku a, b, c, media.
+
+kirjoita("Primeiro numero").
+lue(a).
+
+kirjoita("Segundo numero").
+lue(b).
+
+kirjoita("Terceiro numero").
+lue(c).
+
+media := (a + b + c) / 3.
+
+kirjoita("Media").
+kirjoita(media).
+
+loppu
+```
+
+### 18.5 Média escolar
+```
+ohjelma
+
+kokonaisluku n1, n2, media.
+
+kirjoita("Nota 1").
+lue(n1).
+
+kirjoita("Nota 2").
+lue(n2).
+
+media := (n1 + n2) / 2.
+
+kirjoita("Media final").
+kirjoita(media).
+
+jos (media >= 7) {
+    kirjoita("Aprovado").
+}
+
+loppu
+```
+
+### 18.6 Moda (tem que ter numero igual)
+```
+ohjelma
+
+kokonaisluku a, b, c.
+
+kirjoita("Numero 1").
+lue(a).
+
+kirjoita("Numero 2").
+lue(b).
+
+kirjoita("Numero 3").
+lue(c).
+
+jos (a == b) {
+    kirjoita("Moda").
+    kirjoita(a).
+}
+
+jos (a == c) {
+    kirjoita("Moda").
+    kirjoita(a).
+}
+
+jos (b == c) {
+    kirjoita("Moda").
+    kirjoita(b).
+}
+
+loppu
+```
