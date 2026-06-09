@@ -1,6 +1,6 @@
 import tkinter as tk
 
-from interface import InterfaceApp
+from src.transpilador.interface.interface import InterfaceApp
 
 
 def main() -> None:

@@ -1,6 +1,6 @@
 import pytest
 
-from lexer import tokenize
+from src.transpilador.lexer.lexer import tokenize
 
 
 def test_tokeniza_palavras_reservadas():

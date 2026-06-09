@@ -1,8 +1,8 @@
 import pytest
 
-from front.analisador import Parser
-from front.gerador import PythonCodeGenerator
-from lexer import tokenize
+from src.transpilador.parser.analisador import Parser
+from src.transpilador.codegen.gerador import PythonCodeGenerator
+from src.transpilador.lexer.lexer import tokenize
 
 
 def gerar_codigo_python(codigo_finlandes: str) -> str:
