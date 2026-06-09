@@ -1,7 +1,7 @@
 import pytest
 
-from front.analisador import Parser
-from front.ast_nodes import (
+from src.transpilador.parser.analisador import Parser
+from src.transpilador.parser.ast_nodes import (
     AssignNode,
     IfNode,
     PrintNode,
@@ -10,7 +10,7 @@ from front.ast_nodes import (
     VarDeclNode,
     WhileNode,
 )
-from lexer import tokenize
+from src.transpilador.lexer.lexer import tokenize
 
 
 def gerar_ast(codigo: str):
