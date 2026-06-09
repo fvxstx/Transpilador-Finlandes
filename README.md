@@ -1,10 +1,13 @@
-# Transpilador Finlandês → Python
-## IDE Educacional com Tradução, Geração de AST e Execução em Tempo Real
-
-
+# Transpilador Finlandês usando Python
+- **Professor:** Eduardo Xavier
+- **Curso:** Ciência da Computação
+- **Matéria:** Teoria da Computação e Compiladores
+- **Instituição:** UNIFACS — Universidade Salvador
+- **Projeto:** Desenvolvimento de um Transpilador (Finlandês)
+- **Linguagem Usada:** Python
+  
 ## Download no Drive
 [📥 Baixar Executável (.exe)](https://drive.google.com/file/d/1vUV6gdXXJC8DtWe6ccLXiB1CGAJzwND3/view?usp=sharing)
-
 
 ### Autores
 
