@@ -1,4 +1,4 @@
-from src.transpilador.parser.ast_nodes import (
+from parser.ast_nodes import (
     AssignNode,
     ASTNode,
     IfNode,

@@ -1,6 +1,6 @@
 import re
 
-from src.transpilador.config import TOKEN_SPEC, Token
+from config import TOKEN_SPEC, Token
 
 regex = "|".join(f"(?P<{name}>{pattern})" for name, pattern in TOKEN_SPEC)
 

@@ -1,13 +1,13 @@
 import threading
 import tkinter as tk
 from queue import Queue
-from tkinter import scrolledtext
+from tkinter import scrolledtext, filedialog
 from typing import Any, Dict
 
-from src.transpilador.codegen.gerador import PythonCodeGenerator
-from src.transpilador.config import DICTIONARY
-from src.transpilador.lexer.lexer import tokenize
-from src.transpilador.parser.analisador import Parser
+from codegen.gerador import PythonCodeGenerator
+from config import DICTIONARY
+from lexer.lexer import tokenize
+from parser.analisador import Parser
 
 
 class InterfaceApp:
@@ -30,6 +30,7 @@ class InterfaceApp:
             "accent": "#00aaff",
             "term_bg": "#0a0a0a",
             "green": "#4caf50",
+            "orange": "#ff9800",
         }
 
         self.fonts: Dict[str, Any] = {
@@ -47,6 +48,32 @@ class InterfaceApp:
         self.setup_ui()
         self.load_dictionary()
         self.load_calculator_example()
+
+    def abrir_arquivo(self) -> None:
+        caminho = filedialog.askopenfilename(
+            title="Selecione o arquivo",
+            filetypes=[
+                ("Todos os arquivos", "*.*"),
+                ("Arquivos Finlandês", "*.novaextensaofinlandes"),
+                ("Textos", "*.txt"),
+                ("Imagens", "*.png *.jpg *.jpeg *.gif *.bmp *.webp"),
+            ],
+        )
+
+        if caminho:
+            try:
+                with open(caminho, "r", encoding="utf-8") as f:
+                    conteudo = f.read()
+
+                self.widgets["in"].delete("1.0", tk.END)
+                self.widgets["in"].insert("1.0", conteudo)
+
+                self.update_translation()
+
+            except Exception as e:
+                self.append_terminal_output(
+                    f"\nERRO AO ABRIR ARQUIVO: {e}\n"
+                )
 
     def setup_ui(self) -> None:
         self.root.configure(bg=self.colors["bg"])
@@ -97,6 +124,18 @@ class InterfaceApp:
         button_frame = tk.Frame(self.root, bg=self.colors["bg"])
         button_frame.pack(fill=tk.X)
 
+        self.load_btn = tk.Button(
+            button_frame,
+            text="CARREGAR ARQUIVO",
+            command=self.abrir_arquivo,
+            bg=self.colors["orange"],
+            fg="white",
+            font=self.fonts["button"],
+            relief=tk.FLAT,
+            padx=20,
+            pady=8,
+        )
+
         self.run_btn = tk.Button(
             button_frame,
             text="EXECUTAR PROGRAMA (RUN)",
@@ -108,7 +147,9 @@ class InterfaceApp:
             padx=20,
             pady=8,
         )
-        self.run_btn.pack(pady=10)
+
+        self.load_btn.pack(side=tk.LEFT, padx=10, pady=10,)
+        self.run_btn.pack(side=tk.LEFT, padx=10, pady=10,)
 
         self.set_widget_state("dict", tk.DISABLED)
         self.set_widget_state("out", tk.DISABLED)

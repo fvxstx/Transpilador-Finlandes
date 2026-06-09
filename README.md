@@ -1,6 +1,11 @@
 # Transpilador Finlandês → Python
 ## IDE Educacional com Tradução, Geração de AST e Execução em Tempo Real
 
+
+## Download no Drive
+[📥 Baixar Executável (.exe)](https://drive.google.com/file/d/1vUV6gdXXJC8DtWe6ccLXiB1CGAJzwND3/view?usp=sharing)
+
+
 ### Autores
 
 | Nome | RA |
